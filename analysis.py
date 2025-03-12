@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #%%
-# for preprocessing
+###### FUNCTION DEFINITION FOR PREPROCESSING ######
 def assign_label(string):
     string = str(string)
     if 'true' in string.lower():
@@ -40,12 +40,12 @@ def merge_topic(data_complete):
     data_complete['topic'] = data_complete['topic_new'].fillna(data_complete['topic'])
     data_complete = data_complete.drop(columns=['topic_new'])
     
-    # Merge mit harris_data
+    # Merge with harris_data
     data_complete = data_complete.merge(harris_data[['original', 'topic', 'CNN', 'fact check']], on=['original', 'CNN', 'fact check'], how='left', suffixes=('', '_new'))
     data_complete['topic'] = data_complete['topic_new'].fillna(data_complete['topic'])
     data_complete = data_complete.drop(columns=['topic_new'])
     
-    # Merge mit debate_data
+    # Merge with debate_data
     data_complete = data_complete.merge(debate_data[['original', 'topic', 'CNN', 'fact check']], on=['original', 'CNN', 'fact check'], how='left', suffixes=('', '_new'))
     data_complete['topic'] = data_complete['topic_new'].fillna(data_complete['topic'])
     data_complete = data_complete.drop(columns=['topic_new'])
@@ -81,7 +81,7 @@ def load_excel_data(base_path, file_name):
 ###### READ DATA ######
 
 parent_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
-base_path = "C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\Outputs02_promptohneName"
+base_path = ".\\Outputs02_promptohneName"       # insert name of desired output folder
 # for the debate
 debate_claude = load_excel_data(base_path, 'debate_output_claude.xlsx')
 #extract confidence and label from response of LLM
@@ -119,7 +119,7 @@ trump_gpt['T/F/E'] = trump_gpt['T/F/E'].apply(clean_labels)
 gpt_complete = pd.concat([debate_gpt, harris_gpt, trump_gpt])
 claude_complete = pd.concat([debate_claude, harris_claude, trump_claude])
 
-##### EXCLUDE ???? ######
+# exclude?
 true_gpt = gpt_complete[gpt_complete['T/F/E'] == 'T']
 false_gpt = gpt_complete[gpt_complete['T/F/E'] == 'F']
 explanation_gpt = gpt_complete[gpt_complete['T/F/E'] == 'E']
@@ -146,11 +146,12 @@ trump_data = pd.read_excel(file_path)
 file_path = os.path.join(data_dir, 'speech_harris.xlsx')
 harris_data = pd.read_excel(file_path)
 #%%
-# fix topics and drop duplicated
+# fix topics and drop duplicates
 gpt_complete = merge_topic(gpt_complete)
 claude_complete = merge_topic(claude_complete)
 
 #%%
+# filter topics
 gpt_social = gpt_complete[gpt_complete['topic'] == 'social']
 gpt_economy = gpt_complete[gpt_complete['topic'] == 'economy']
 gpt_candidate = gpt_complete[gpt_complete['topic'] == 'candidate']
@@ -162,10 +163,11 @@ claude_candidate = claude_complete[claude_complete['topic'] == 'candidate']
 claude_security = claude_complete[claude_complete['topic'] == 'security']
 
 #%%
+# check length
 print(len(gpt_complete))
 print(len(claude_complete))
 #%%
-###### FUNCTION DEFINITION ######
+###### FUNCTION DEFINITION FOR ANALYSIS ######
 
 def get_df_name(df):
     name =[x for x in globals() if globals()[x] is df][0]
@@ -174,7 +176,7 @@ def get_df_name(df):
 def analyse_dataset(data):
     truth = data['T/F/E']
     llm = data['label']
-    # Report mit Precision, Recall, F1-Score
+    # Report with Precision, Recall, F1-Score
     report = (classification_report(truth, llm, labels=['T', 'F', 'E']))
     file_path = 'C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\reports\\classification_report_{dataset}.txt'
     path = file_path.format(dataset=get_df_name(data))
@@ -247,7 +249,6 @@ print(metrics_df)
 ###### CALCULATE METRICS AND MEAN CONFIDENCE FOR ALL SUBSETS ######
 
 data_list = ['debate_gpt', 'debate_claude', 'harris_gpt', 'harris_claude', 'trump_gpt', 'trump_claude', 'gpt_complete', 'claude_complete', 'gpt_social', 'gpt_economy', 'gpt_security', 'gpt_candidate', 'claude_social', 'claude_economy', 'claude_security', 'claude_candidate']
-#data_list = ['debate_claude', 'harris_claude', 'trump_claude', 'claude_complete']
 
 for dat in data_list:
     df = globals()[dat]
@@ -278,7 +279,7 @@ for dat in data_list:
 metrics_df.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\metrics.xlsx')
 
 #%%
-##### EXCLUDE????? ######
+# exclude?
 # analysis of difference between labels, only for false and explanation bc too few right answers
 metrics_labels = {
     #'true_gpt': calculate_metrics(true_gpt),
@@ -293,6 +294,7 @@ metrics_labels = {
 metrics_labels = pd.DataFrame(metrics_labels)
  #%%
 
+# for checking the label subsets
 a = calculate_metrics_binary(gpt_complete, 'F')
 b = calculate_metrics_binary(claude_complete, 'F')
 c = calculate_metrics_binary(gpt_complete, 'E')
@@ -317,7 +319,7 @@ f1_scores = {
 fig, ax = plt.subplots()
 ax.bar(f1_scores.keys(), f1_scores.values(), color=['#FFB84D', '#FF9933', '#E60000', '#B30000'])
 
-# Diagrammbeschriftungen
+# Add descriptions
 ax.set_title('Weighted F1-Score Comparison: Harris vs. Trump (GPT vs. Claude)')
 ax.set_ylabel('F1-Score')
 ax.set_xlabel('Model and speaker')
@@ -326,13 +328,12 @@ plt.ylim(0, 1)
 plt.yticks(np.arange(0, 1, 0.1))
 
 
-# Setze die X-Achsen-Beschriftungen
+# set ticks of x axis
 ax.set_xticklabels(['GPT: Harris', 'GPT: Trump', 'Claude: Harris', 'Claude: Trump'])
 
-# Diagramm anpassen
+# finetune diagram
 plt.tight_layout()
 
-# Zeige das Diagramm
 plt.show()
 
 #%%
@@ -340,32 +341,27 @@ plt.show()
 selected_models = ['gpt_complete', 'claude_complete']
 f1_scores = metrics_df.loc[selected_models, 'f1']
 
-# Erstelle das Diagramm
+# create diagram
 fig, ax = plt.subplots()  # Erstelle das Axes-Objekt
 ax.bar(f1_scores.index, f1_scores, color=['#FF9933', '#B30000'])
 
-# Diagrammbeschriftungen
 ax.set_title('F1-Score Comparison: GPT vs. Claude')
 ax.set_ylabel('F1-Score')
 ax.set_xlabel('Model')
 
-# Setze die X-Achsen-Beschriftungen
 ax.set_xticklabels(['GPT', 'Claude'])
 
-# Diagramm anpassen
 plt.tight_layout()
 
-# Zeige das Diagramm
 plt.show()
 #%% 
 ####### CONFUSION MATRICES AND METRICS #######
 
-#%%
 # for debate and claude
 
 truth = debate_claude['T/F/E']
 llm = debate_claude['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E'], zero_division=0))
 
 # Confusion Matrix
@@ -381,7 +377,7 @@ plt.show()
 
 truth = debate_gpt['T/F/E']
 llm = debate_gpt['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -395,7 +391,7 @@ plt.show()
 # for harris and claude
 truth = harris_claude['T/F/E']
 llm = harris_claude['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -409,7 +405,7 @@ plt.show()
 # for harris and gpt
 truth = harris_gpt['T/F/E']
 llm = harris_gpt['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -423,7 +419,7 @@ plt.show()
 # for trump and claude
 truth = trump_claude['T/F/E']
 llm = trump_claude['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -438,7 +434,7 @@ plt.show()
 
 truth = trump_gpt['T/F/E']
 llm = trump_gpt['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -454,7 +450,7 @@ plt.show()
 truth = gpt_complete['T/F/E']
 llm = gpt_complete['label']
 print('for gpt complete')
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -468,7 +464,7 @@ plt.show()
 print('For claude complete:')
 truth = claude_complete['T/F/E']
 llm = claude_complete['label']
-# Report mit Precision, Recall, F1-Score
+# Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
@@ -481,6 +477,7 @@ plt.show()
 
 #%%
 ###### ANALYSIS OF TOPICS ######
+
 def analyse_topic(dataset, topic, model):
     data = dataset[dataset['topic'] == topic]
     truth = data['T/F/E']
@@ -508,7 +505,8 @@ analyse_topic(gpt_complete, 'security', 'GPT')
 analyse_topic(gpt_complete, 'candidate', 'GPT')
 
 #%%
-###### PLOTS LABEL DISTRIBUTION ######
+###### PLOT LABEL DISTRIBUTION ######
+
 def plot_pie(ax, data, title):
     counts = data['T/F/E'].value_counts()
     color_dict = {'T': '#2ca02c', 'F': '#d62728', 'E': '#1f77b4'}

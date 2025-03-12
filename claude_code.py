@@ -13,7 +13,7 @@ import openpyxl
 
 #%%
 # read data
-data_dir = "C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\data\\"
+data_dir = ".\\data\\"
 # for the debate
 file_path = os.path.join(data_dir, 'debate.xlsx')
 debate_data = pd.read_excel(file_path)
@@ -26,7 +26,7 @@ harris_data = pd.read_excel(file_path)
 
 #%%
 
-key_dir = "C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\keys\\"
+key_dir = ".\\keys\\"
 with open(os.path.join(key_dir, 'key_claude.txt'), 'r') as file:
     key = file.read()
 
@@ -72,7 +72,7 @@ results_debate = pd.DataFrame(results_debate)
 # merge with input df
 debate_merged = pd.merge(debate_data, results_debate, on=['person', 'original'], how='outer')
 # save as excel
-debate_merged.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\debate_output_claude.xlsx', index=False)
+debate_merged.to_excel('.\\debate_output_claude.xlsx', index=False)
 
 #%%
 # for data of trumps speech
@@ -83,7 +83,7 @@ results_trump = pd.DataFrame(results_trump)
 # merge with input df
 trump_merged = pd.merge(trump_data, results_trump, on=['person', 'original'], how='outer')
 # save as excel
-trump_merged.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\trump_output_claude.xlsx', index=False)
+trump_merged.to_excel('.\\trump_output_claude.xlsx', index=False)
 
 #%%
 # for data of harris' speech
@@ -94,26 +94,4 @@ results_harris = pd.DataFrame(results_harris)
 # merge with input df
 harris_merged = pd.merge(harris_data, results_harris, on=['person', 'original'], how='outer')
 # save as excel
-harris_merged.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\harris_output_claude.xlsx', index=False)
-
-#%%
-
-# old
-'''
-# basic setup for first test
-with open('key_claude.txt', 'r') as file:
-    key = file.read()
-
-client = anthropic.Anthropic(
-    api_key = key
-)
-message = client.messages.create(
-    model="claude-3-5-haiku-20241022",
-    max_tokens=100,
-    system = "Answer only one word",
-    messages=[
-        {"role": "user", "content": "Hello, Claude"}
-    ]
-)
-print(message.content)
-'''
+harris_merged.to_excel('.\\harris_output_claude.xlsx', index=False)

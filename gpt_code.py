@@ -11,7 +11,7 @@ import pandas as pd
 
 #%%
 # read data
-data_dir = "C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\data\\"
+data_dir = ".\\data\\"
 # for the debate
 file_path = os.path.join(data_dir, 'debate.xlsx')
 debate_data = pd.read_excel(file_path)
@@ -27,11 +27,12 @@ harris_data = pd.read_excel(file_path)
 
 #%%
 # add API key, endpoint and prompts
-key_dir = "C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\keys\\"
+key_dir = ".\\keys\\"
 with open(os.path.join(key_dir, 'openai_key.txt'), 'r') as file:
     API_KEY = file.read()
 
-ENDPOINT = 'https://gruppe2.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview'
+with open(os.path.join(key_dir, 'endpoint_azure.txt'), 'r') as file:
+    ENDPOINT = file.read()
 
 system_prompt = "You are a fact checker. Check if the given claim is correct. Answer ONLY 'True', 'False' or 'Explanation needed' and a number how much percent you are sure. Nothing else, NO EXPLANATION!"
 # %%
@@ -41,7 +42,7 @@ def send_requests(data):
     errors = []
     for claim in data['original']:
         person = data.loc[data['original'] == claim, 'person'].iloc[0]
-        text = f"'{claim}'"
+        text = f"'{person}: {claim}'"
         
         # Prepare the request payload for Azure OpenAI
         payload = {
@@ -93,7 +94,7 @@ results_debate = pd.DataFrame(results_debate)
 # merge with input df
 debate_merged = pd.merge(debate_data, results_debate, on=['person', 'original'], how='outer')
 # save as excel
-debate_merged.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\debate_output_openai.xlsx', index=False)
+debate_merged.to_excel('.\\debate_output_openai.xlsx', index=False)
 
 #%%
 # for harris
@@ -104,7 +105,7 @@ results_harris = pd.DataFrame(results_harris)
 # merge with input df
 harris_merged = pd.merge(harris_data, results_harris, on=['person', 'original'], how='outer')
 # save as excel
-harris_merged.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\harris_output_openai.xlsx', index=False)
+harris_merged.to_excel('.\\harris_output_openai.xlsx', index=False)
 
 #%%
 # for trump
@@ -117,4 +118,4 @@ trump_merged = pd.merge(trump_data, results_trump, on=['person', 'original'], ho
 # Convert confidence to numeric for analysis
 #df['confidence'] = pd.to_numeric(df['confidence'])
 # save as excel
-trump_merged.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\trump_output_openai.xlsx', index=False)
+trump_merged.to_excel('.\\trump_output_openai.xlsx', index=False)
