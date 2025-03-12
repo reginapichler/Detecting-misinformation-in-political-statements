@@ -22,11 +22,7 @@ trump_data = pd.read_excel(file_path)
 file_path = os.path.join(data_dir, 'speech_harris.xlsx')
 harris_data = pd.read_excel(file_path)
 #%%
-
-
-
-#%%
-# add API key, endpoint and prompts
+# add API key, endpoint and system prompt
 key_dir = ".\\keys\\"
 with open(os.path.join(key_dir, 'openai_key.txt'), 'r') as file:
     API_KEY = file.read()
@@ -36,13 +32,13 @@ with open(os.path.join(key_dir, 'endpoint_azure.txt'), 'r') as file:
 
 system_prompt = "You are a fact checker. Check if the given claim is correct. Answer ONLY 'True', 'False' or 'Explanation needed' and a number how much percent you are sure. Nothing else, NO EXPLANATION!"
 # %%
-
+# define function for sending requests
 def send_requests(data):
     results = []
     errors = []
     for claim in data['original']:
         person = data.loc[data['original'] == claim, 'person'].iloc[0]
-        text = f"'{person}: {claim}'"
+        text = f"'{person}: {claim}'"                               # insert user prompt here!
         
         # Prepare the request payload for Azure OpenAI
         payload = {
@@ -83,10 +79,12 @@ def send_requests(data):
         }
         results.append(result)
         
+    # print information about processing --> find out whether statements have been blocked by the content filter
     print(f"Processed {len(results)} successful requests, {len(errors)} failed requests.")
 
     return results, errors
 #%%
+# for the debate
 results_debate, errors_debate = send_requests(debate_data)
 #%%
 # Convert the list of results to a DataFrame

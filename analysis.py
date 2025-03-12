@@ -14,6 +14,8 @@ import numpy as np
 
 #%%
 ###### FUNCTION DEFINITION FOR PREPROCESSING ######
+
+# asign given label to the output of the LLM (string: text output of the LLM)
 def assign_label(string):
     string = str(string)
     if 'true' in string.lower():
@@ -24,7 +26,8 @@ def assign_label(string):
         return 'E'
     else:
         return None
-    
+
+# clean the annotated labels (sometimes spaces have been in the label)
 def clean_labels(string):
     if 'E ' in string:
         return 'E'
@@ -35,6 +38,7 @@ def clean_labels(string):
     else:
         return string
     
+# clean the annotated topics (slight differences happend during annotation)
 def merge_topic(data_complete):
     data_complete = data_complete.merge(trump_data[['original', 'topic', 'CNN', 'fact check']], on=['original', 'CNN', 'fact check'], how='left', suffixes=('', '_new'))
     data_complete['topic'] = data_complete['topic_new'].fillna(data_complete['topic'])
@@ -59,17 +63,8 @@ def merge_topic(data_complete):
     
     return data_complete
 
+# load excel data
 def load_excel_data(base_path, file_name):
-    """
-    Load data from an Excel file located in the specified base path.
-
-    Parameters:
-    base_path (str): The base path where the Excel file is located.
-    file_name (str): The name of the Excel file to load.
-
-    Returns:
-    pd.DataFrame: A DataFrame containing the data from the Excel file.
-    """
     # Construct the full file path
     file_path = os.path.join(base_path, file_name)
     
@@ -80,6 +75,7 @@ def load_excel_data(base_path, file_name):
 #%%
 ###### READ DATA ######
 
+# define parent directory (wouldn't be necessary in this git project)
 parent_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
 base_path = ".\\Outputs02_promptohneName"       # insert name of desired output folder
 # for the debate
@@ -89,26 +85,33 @@ debate_claude['confidence'] = debate_claude['response'].str.extract(r'(\d+)%')
 debate_claude['label'] = debate_claude['response'].apply(assign_label)
 debate_claude['T/F/E'] = debate_claude['T/F/E'].apply(clean_labels)
 #%%
+# prepare data of the debate and gpt
 debate_gpt = load_excel_data(base_path, 'debate_output_openai.xlsx')
+# extract the confidence
 debate_gpt['confidence'] = debate_gpt['response'].str.extract(r'(\d+)%')
+# apply the functions defined above to extract labels
 debate_gpt['label'] = debate_gpt['response'].apply(assign_label)
 debate_gpt['T/F/E'] = debate_gpt['T/F/E'].apply(clean_labels)
 #%%
+# prepare data of harris and claude, steps are similar to the ones for the debate
 harris_claude = load_excel_data(base_path, 'harris_output_claude.xlsx')
 harris_claude['confidence'] = harris_claude['response'].str.extract(r'(\d+)%')
 harris_claude['label'] = harris_claude['response'].apply(assign_label)
 harris_claude['T/F/E'] = harris_claude['T/F/E'].apply(clean_labels)
 #%%
+# prepare data of harris and gpt, steps are similar to the ones for the debate
 harris_gpt = load_excel_data(base_path, 'harris_output_openai.xlsx')
 harris_gpt['confidence'] = harris_gpt['response'].str.extract(r'(\d+)%')
 harris_gpt['label'] = harris_gpt['response'].apply(assign_label)
 harris_gpt['T/F/E'] = harris_gpt['T/F/E'].apply(clean_labels)
 #%%
+# prepare data of trump and claude, steps are similar to the ones for the debate
 trump_claude = load_excel_data(base_path, 'trump_output_claude.xlsx')
 trump_claude['confidence'] = trump_claude['response'].str.extract(r'(\d+)%')
 trump_claude['label'] = trump_claude['response'].apply(assign_label)
 trump_claude['T/F/E'] = trump_claude['T/F/E'].apply(clean_labels)
 #%%
+# prepare data of trump and gpt, steps are similar to the ones for the debate
 trump_gpt = load_excel_data(base_path, 'trump_output_openai.xlsx')
 trump_gpt['confidence'] = trump_gpt['response'].str.extract(r'(\d+)%')
 trump_gpt['label'] = trump_gpt['response'].apply(assign_label)
@@ -116,10 +119,11 @@ trump_gpt['T/F/E'] = trump_gpt['T/F/E'].apply(clean_labels)
 #%%
 ###### FILTER DATA ######
 
+# combine all datasets to complete data for gpt and claude
 gpt_complete = pd.concat([debate_gpt, harris_gpt, trump_gpt])
 claude_complete = pd.concat([debate_claude, harris_claude, trump_claude])
 
-# exclude?
+# create subsets of labels for gpt and claude separately
 true_gpt = gpt_complete[gpt_complete['T/F/E'] == 'T']
 false_gpt = gpt_complete[gpt_complete['T/F/E'] == 'F']
 explanation_gpt = gpt_complete[gpt_complete['T/F/E'] == 'E']
@@ -135,7 +139,7 @@ explanation_claude = claude_complete[claude_complete['label'] == 'E']
 
 # topics: economy, social, security, candidate
 # read orignal data (with updated topis)
-data_dir = "C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\data\\"
+data_dir = ".\\data\\"
 # for the debate
 file_path = os.path.join(data_dir, 'debate.xlsx')
 debate_data = pd.read_excel(file_path)
@@ -169,21 +173,23 @@ print(len(claude_complete))
 #%%
 ###### FUNCTION DEFINITION FOR ANALYSIS ######
 
+# extract the name of a dataframe
 def get_df_name(df):
     name =[x for x in globals() if globals()[x] is df][0]
     return name
 
+# analyse a dataset: compute classification metrics and save them in a folder
 def analyse_dataset(data):
     truth = data['T/F/E']
     llm = data['label']
     # Report with Precision, Recall, F1-Score
     report = (classification_report(truth, llm, labels=['T', 'F', 'E']))
-    file_path = 'C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\reports\\classification_report_{dataset}.txt'
+    file_path = '.\\classification_reports\\classification_report_{dataset}.txt'
     path = file_path.format(dataset=get_df_name(data))
     with open(path, 'w') as file:
         file.write(report)
     
-
+# calculate metrics: precision, recall, f1 and accuracy
 def calculate_metrics(dataset):
     truth = dataset['T/F/E']
     llm = dataset['label']
@@ -198,6 +204,7 @@ def calculate_metrics(dataset):
         'f1': f1}
     return(out)
 
+# for test cases (not used for final analysis in the paper): calculate the metrics for binary labels (true label is given to the function, could be T, F or E)
 def calculate_metrics_binary(dataset, true_label):
     dataset = dataset.copy()
     dataset['T/F/E'] = np.where(dataset['T/F/E'].astype('string') == true_label, 1, 0)
@@ -228,6 +235,7 @@ m_harris_claude = calculate_metrics(harris_claude)
 m_trump_claude = calculate_metrics(trump_claude)
 m_complete_claude = calculate_metrics(claude_complete)
 
+# combine metrics
 metrics = {
     'debate_gpt': m_debate_gpt,
     'debate_claude': m_debate_claude,
@@ -248,8 +256,10 @@ print(metrics_df)
 #%%
 ###### CALCULATE METRICS AND MEAN CONFIDENCE FOR ALL SUBSETS ######
 
+# define all datasets which should be included
 data_list = ['debate_gpt', 'debate_claude', 'harris_gpt', 'harris_claude', 'trump_gpt', 'trump_claude', 'gpt_complete', 'claude_complete', 'gpt_social', 'gpt_economy', 'gpt_security', 'gpt_candidate', 'claude_social', 'claude_economy', 'claude_security', 'claude_candidate']
 
+# compute metrics for the datalist defined above: share of each label, metrics, mean confidence for each label, number of observations for each subset
 for dat in data_list:
     df = globals()[dat]
 
@@ -276,7 +286,7 @@ for dat in data_list:
     metrics_df.loc[dat, 'n_obs'] = len(df)
 #%%
 # save metrics
-metrics_df.to_excel('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\metrics.xlsx')
+metrics_df.to_excel('.\\metrics.xlsx')
 
 #%%
 # exclude?
@@ -294,7 +304,7 @@ metrics_labels = {
 metrics_labels = pd.DataFrame(metrics_labels)
  #%%
 
-# for checking the label subsets
+# only for testing: check label subsets
 a = calculate_metrics_binary(gpt_complete, 'F')
 b = calculate_metrics_binary(claude_complete, 'F')
 c = calculate_metrics_binary(gpt_complete, 'E')
@@ -302,6 +312,7 @@ d = calculate_metrics_binary(claude_complete, 'E')
 
 #%%
 ###### BAR PLOTS ######
+# create bar plots of the weighted F1-score
 
 # only harris and trump
 harris_complete_gpt = gpt_complete[gpt_complete['person'] == 'Harris']
@@ -309,6 +320,7 @@ trump_complete_gpt = gpt_complete[gpt_complete['person'] == 'Trump']
 harris_complete_claude = claude_complete[claude_complete['person'] == 'Harris']
 trump_complete_claude = claude_complete[claude_complete['person'] == 'Trump']
 
+# extract the f1-scores
 f1_scores = {
     'harris_gpt': calculate_metrics(harris_complete_gpt)['f1'],
     'trump_gpt': calculate_metrics(trump_complete_gpt)['f1'],
@@ -316,6 +328,7 @@ f1_scores = {
     'trump_claude': calculate_metrics(trump_complete_claude)['f1']
 }
 
+# create plot
 fig, ax = plt.subplots()
 ax.bar(f1_scores.keys(), f1_scores.values(), color=['#FFB84D', '#FF9933', '#E60000', '#B30000'])
 
@@ -337,7 +350,7 @@ plt.tight_layout()
 plt.show()
 
 #%%
-# make plot
+# create a plot for the comparison of gpt and claude
 selected_models = ['gpt_complete', 'claude_complete']
 f1_scores = metrics_df.loc[selected_models, 'f1']
 
@@ -358,13 +371,12 @@ plt.show()
 ####### CONFUSION MATRICES AND METRICS #######
 
 # for debate and claude
-
 truth = debate_claude['T/F/E']
 llm = debate_claude['label']
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E'], zero_division=0))
 
-# Confusion Matrix
+# Plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by claude')
@@ -374,12 +386,13 @@ plt.savefig('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codew
 plt.show()
 #%%
 # for debate and gpt
-
 truth = debate_gpt['T/F/E']
 llm = debate_gpt['label']
+
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
+# plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by openai')
@@ -391,9 +404,11 @@ plt.show()
 # for harris and claude
 truth = harris_claude['T/F/E']
 llm = harris_claude['label']
+
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
+# plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by claude')
@@ -405,9 +420,11 @@ plt.show()
 # for harris and gpt
 truth = harris_gpt['T/F/E']
 llm = harris_gpt['label']
+
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
+# plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by openai')
@@ -419,9 +436,11 @@ plt.show()
 # for trump and claude
 truth = trump_claude['T/F/E']
 llm = trump_claude['label']
+
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
+# plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by claude')
@@ -434,9 +453,11 @@ plt.show()
 
 truth = trump_gpt['T/F/E']
 llm = trump_gpt['label']
+
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
+# plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by openai')
@@ -445,14 +466,15 @@ plt.title('Confusion Matrix for the speech of Donald Trump')
 plt.savefig('C:\\Users\\repic\\Documents\\Studium\\Semester5\\LLM_Seminar\\Codework\\plots\\trump_openai.png', dpi=300)
 plt.show()
 #%%
-
-
+# for gpt complete
 truth = gpt_complete['T/F/E']
 llm = gpt_complete['label']
 print('for gpt complete')
+
 # Report with Precision, Recall, F1-Score
 print(classification_report(truth, llm, labels=['T', 'F', 'E']))
 
+# plot confusion matrix
 cm = confusion_matrix(truth, llm, labels=['T', 'F', 'E'])
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['True', 'False', 'Explanation needed'], yticklabels=['True', 'False', 'Explanation needed'])
 plt.xlabel('Predicted by GPT')
@@ -478,6 +500,7 @@ plt.show()
 #%%
 ###### ANALYSIS OF TOPICS ######
 
+# define function for analysing a topic of a desired model (the model is also specified in the used dataset)
 def analyse_topic(dataset, topic, model):
     data = dataset[dataset['topic'] == topic]
     truth = data['T/F/E']
@@ -494,6 +517,7 @@ def analyse_topic(dataset, topic, model):
     plt.show()
     return report
 #%%
+# analyse the topics for claude and gpt
 analyse_topic(claude_complete, 'economy', 'Claude')
 analyse_topic(claude_complete, 'social', 'Claude')
 analyse_topic(claude_complete, 'security', 'Claude')
@@ -507,6 +531,7 @@ analyse_topic(gpt_complete, 'candidate', 'GPT')
 #%%
 ###### PLOT LABEL DISTRIBUTION ######
 
+# define a function for plotting the label distribution
 def plot_pie(ax, data, title):
     counts = data['T/F/E'].value_counts()
     color_dict = {'T': '#2ca02c', 'F': '#d62728', 'E': '#1f77b4'}
@@ -514,9 +539,10 @@ def plot_pie(ax, data, title):
     ax.pie(counts, labels=counts.index, autopct='%1.1f%%', startangle=90, colors = colors)
     ax.set_title(title)
 
-# Plot erstellen
+# create pie chart
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
+# label axes
 plot_pie(axes[0], gpt_complete, "Overall Distribution")
 plot_pie(axes[1], harris_gpt, "For Kamala Harris")
 plot_pie(axes[2], trump_gpt, "For Donald Trump")

@@ -26,6 +26,7 @@ harris_data = pd.read_excel(file_path)
 
 #%%
 
+# read api key
 key_dir = ".\\keys\\"
 with open(os.path.join(key_dir, 'key_claude.txt'), 'r') as file:
     key = file.read()
@@ -34,16 +35,17 @@ client = anthropic.Anthropic(
     api_key = key
 )
 
+# define system prompt
 system_prompt = "You are a fact checker. Check if the given claim is correct. Answer ONLY 'True', 'False' or 'Explanation needed' and a number how much percent you are sure. Nothing else, NO EXPLANATION!"
 
 #%%
-# function for sending requests
+# Define function for sending requests
 def send_requests(data):
     results = []
     # Iterate through the claims
     for claim in data['original']:
         person = data.loc[data['original'] == claim, 'person'].iloc[0]
-        text = f"'{person}: {claim}'"
+        text = f"'{person}: {claim}'"                                   # insert desired user_prompt here!
         
         message = client.messages.create(
            model="claude-3-5-haiku-20241022",
