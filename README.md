@@ -2,5 +2,7 @@
 - claude_code.py: includes the Code for sending prompts for the evaluation of the statements to Claude 3.5-Haiku
 - analysis.py: includes the Code for the analysis of the ouputs of the two LLMs (note: for the evaluation of the prompts without the candidates name, three statements were blocked by Azure/GPT. The corresponding statements have to be removed manually from the dataset of Claude before the analysis)
 - data: this folder contains all datasets
-- reports: this folder includes all classification reports
-  
+- classification_reports: this folder includes all classification reports
+- keys: insert the API keys and the Azure endpoint in the corresponding files
+- Outputs_...: includes the outputs of the mentioned Code above (gpt_code.py, claude_code.py) when using prompt with/without candidates name
+- plots: includes the outputs of analysis.py
